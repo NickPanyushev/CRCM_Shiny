@@ -1,3 +1,5 @@
+#This script is running the application and sets up the server and the UI
+
 packages <- c("shiny", "data.table", "devtools", "DT")
 install.packages(setdiff(packages, rownames(installed.packages()))) 
 
