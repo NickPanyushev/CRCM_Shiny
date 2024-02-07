@@ -1,40 +1,63 @@
-#This script is intended for collecting data from TCGA and storing it in the temporary files
+#This script is intended for collecting data from TCGA, 
+# preprocessing it
+# and storing it in temporary files
 
-packages <- c("data.table", "devtools", "DT")
+packages <- c("data.table", "here")
 install.packages(setdiff(packages, rownames(installed.packages())))
 
 
 #Checking if TCGAbiolinks is not installed and installing if necessary
-if ("TCGAbiolinks" %in% rownames(installed.packages())) {
+if (!requireNamespace("TCGAbiolinks", quietly = TRUE)) {
   if (!requireNamespace("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
   BiocManager::install("TCGAbiolinks")
 }
 
+
+
+
 #loading libraries 
 library(TCGAbiolinks)
 library(data.table)
-library(DT)
+library(here) #this library allows to make portable file structures
 
 #Here I will perform some experiments with the retrieving data from TCGA
 project_name <- "TCGA-PAAD"
 
 
 #This will download only clinical data from TCGA portal
+#TODO
+#Add check if the file exists
 clinical_data <- GDCquery_clinic(project_name)
+clinical_data <- as.data.table(clinical_data)
 
-s
+#Let's make 2 variables as factors to select on
+#prior_malignancy and primary_diagnosis
+
+clinical_data$prior_malignancy <- ifelse(clinical_data$prior_malignancy == "yes", TRUE, FALSE)
+clinical_data$primary_diagnosis <- as.factor(clinical_data$primary_diagnosis)
+
+#Saving clinical_data file to the filesystem
+dir.create(here("temp", "preprocessed_files"), recursive = TRUE)
+clin_data_file <- here("temp", "preprocessed_files", "clinical_data.Rds")
+
+save(clinical_data, file = clin_data_file)
+
+
+#Commented out as it is not necessary RN - it's transcriptome data thing
 #This block downloads the project altogether (~700 mb)
-query.my <- GDCquery(
-  project = project_name,
-  access = "open",
-  data.category = "Transcriptome Profiling",
-  data.type = "Gene Expression Quantification",
-  experimental.strategy = "RNA-Seq",
-  workflow.type = "STAR - Counts")
+# query.my <- GDCquery(
+#   project = project_name,
+#   access = "open",
+#   data.category = "Transcriptome Profiling",
+#   data.type = "Gene Expression Quantification",
+#   experimental.strategy = "RNA-Seq",
+#   workflow.type = "STAR - Counts")
+# 
+# # download files
+# GDCdownload(query.my)
+# 
+# #Prepare the table
+# all_TCGA_data <- GDCprepare(query = query.my)
 
-# download files
-GDCdownload(query.my)
-
-#Prepare the table
-all_TCGA_data <- GDCprepare(query = query.my)
+#Clinical data cleanup to coerce data.types and remove the empty columns
