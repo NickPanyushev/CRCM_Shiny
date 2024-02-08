@@ -13,13 +13,11 @@ if (!requireNamespace("TCGAbiolinks", quietly = TRUE)) {
   BiocManager::install("TCGAbiolinks")
 }
 
-
-
-
 #loading libraries 
 library(TCGAbiolinks)
 library(data.table)
 library(here) #this library allows to make portable file structures
+here::i_am("TCGA_download.R") #let it locate the root directory by finding Rproj file
 
 #Here I will perform some experiments with the retrieving data from TCGA
 project_name <- "TCGA-PAAD"
@@ -36,6 +34,13 @@ clinical_data <- as.data.table(clinical_data)
 
 clinical_data$prior_malignancy <- ifelse(clinical_data$prior_malignancy == "yes", TRUE, FALSE)
 clinical_data$primary_diagnosis <- as.factor(clinical_data$primary_diagnosis)
+
+#Preparing data to build KM_plot
+clinical_data$days_to_death <- as.numeric(clinical_data$days_to_death)
+clinical_data[vital_status == "Alive", vital_status := 0]
+clinical_data[vital_status == "Dead", vital_status := 1]
+clinical_data$vital_status <- as.numeric(clinical_data$vital_status)
+
 
 #Saving clinical_data file to the filesystem
 dir.create(here("temp", "preprocessed_files"), recursive = TRUE)
